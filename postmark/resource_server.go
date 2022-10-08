@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -16,6 +17,9 @@ import (
 func resourceServer() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceServerCreate,
+		ReadContext:   resourceServerRead,
+		UpdateContext: resourceServerUpdate,
+
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -84,6 +88,65 @@ func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interfa
 	}
 	d.SetId(strconv.FormatInt(server.ID, 10))
 	d.Set("apitokens", flattenStringList(server.ApiTokens))
+
+	return diags
+}
+
+func resourceServerUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+
+	client := &http.Client{}
+	c := m.(*postmarkSDK.Client)
+
+	if d.HasChange("name") || d.HasChange("color") {
+		serverId := d.Id()
+		server := postmarkSDK.Server{}
+		server.Name = d.Get("name").(string)
+		server.Color = d.Get("color").(string)
+		req, err := http.NewRequest("PUT", "https://api.postmarkapp.com/servers/"+serverId, nil)
+		req.Header.Add("Accept", "application/json")
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("X-Postmark-Account-Token", c.AccountToken)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		body, err := json.Marshal(server)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		res, err := client.Do(req)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		defer res.Body.Close()
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		d.Set("last_updated", time.Now().Format(time.RFC850))
+	}
+
+	return resourceServerRead(ctx, d, m)
+}
+
+func resourceServerRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+
+	c := m.(*postmarkSDK.Client)
+	// Warning or errors can be collected in a slice type
+	var diags diag.Diagnostics
+	server, err := c.GetServer(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("name", server.Name); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("color", server.Color); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("apitokens", flattenStringList(server.ApiTokens)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
