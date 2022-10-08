@@ -15,7 +15,7 @@ func Provider() *schema.Provider {
 				Required:    true,
 				Sensitive:   true,
 				DefaultFunc: schema.EnvDefaultFunc("POSTMARK_ACCOUNT_TOKEN", nil),
-				Description: "The API acount token for postmark API operations.",
+				Description: descriptions["token"],
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -43,4 +43,12 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	log.Println("[INFO] Initializing postmark client")
 
 	return c, nil
+}
+
+var descriptions map[string]string
+
+func init() {
+	descriptions = map[string]string{
+		"token": "The API account token for postmark API operations.",
+	}
 }
