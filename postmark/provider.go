@@ -18,7 +18,9 @@ func Provider() *schema.Provider {
 				Description: "The API acount token for postmark API operations.",
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"postmark_server": resourceServer(),
+		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"postmark_servers": dataSourceServers(),
 		},
