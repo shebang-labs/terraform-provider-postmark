@@ -19,7 +19,7 @@ func resourceServer() *schema.Resource {
 		CreateContext: resourceServerCreate,
 		ReadContext:   resourceServerRead,
 		UpdateContext: resourceServerUpdate,
-
+		DeleteContext: resourceServerDelete,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -148,6 +148,33 @@ func resourceServerRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 
+	return diags
+}
+
+func resourceServerDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	client := &http.Client{}
+	c := m.(*postmarkSDK.Client)
+
+	serverId := d.Id()
+	req, err := http.NewRequest("DELETE", "https://api.postmarkapp.com/servers/"+serverId, nil)
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Postmark-Account-Token", c.AccountToken)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer res.Body.Close()
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	d.SetId("")
 	return diags
 }
 
