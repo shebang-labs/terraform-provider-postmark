@@ -6,11 +6,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	postmarkSDK "github.com/keighl/postmark"
 )
 
 func TestAccDataSourceServers_basic(t *testing.T) {
-	var server postmarkSDK.Server
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -19,14 +17,14 @@ func TestAccDataSourceServers_basic(t *testing.T) {
 			{
 				Config: testAccPostmarkServersConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckPostmarkServersExists("data.postmark_servers.all", &server),
+					testAccCheckPostmarkServersExists("data.postmark_servers.all"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckPostmarkServersExists(n string, server *postmarkSDK.Server) resource.TestCheckFunc {
+func testAccCheckPostmarkServersExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		_, ok := s.RootModule().Resources[n]
 		if !ok {
