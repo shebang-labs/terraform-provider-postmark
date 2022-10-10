@@ -67,7 +67,6 @@ func testAccCheckPostmarkServerExists(n string, server *postmarkSDK.Server) reso
 type testAccPostmarkServerExpectedAttributes struct {
 	Name  string
 	Color string
-	ID    int
 }
 
 func testAccCheckPostmarkServerAttributes(server *postmarkSDK.Server, want *testAccPostmarkServerExpectedAttributes) resource.TestCheckFunc {
