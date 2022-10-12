@@ -21,6 +21,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"postmark_server": resourceServer(),
 			"postmark_stream": resourceStream(),
+			"postmark_domain": resourceDomain(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"postmark_servers": dataSourceServers(),
