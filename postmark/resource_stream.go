@@ -1,11 +1,9 @@
 package postmark
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
+	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -57,42 +55,16 @@ type Stream struct {
 }
 
 func resourceStreamCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	client := &http.Client{}
-
-	req, err := http.NewRequest("POST", "https://api.postmarkapp.com/message-streams", nil)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-Postmark-Server-Token", d.Get("server_token").(string))
+	serverToken := d.Get("server_token").(string)
 	stream := Stream{
 		ID:                d.Get("stream_id").(string),
 		Name:              d.Get("name").(string),
 		Description:       d.Get("description").(string),
 		MessageStreamType: d.Get("message_stream_type").(string),
 	}
-
-	body, err := json.Marshal(stream)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	res, err := client.Do(req)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	err = json.NewDecoder(res.Body).Decode(&stream)
-	if err != nil {
-		return diag.FromErr(err)
+	diags, stream := doStreamRequests("POST", "", stream, serverToken)
+	if stream.ID == "" {
+		return diags
 	}
 	d.SetId(d.Get("stream_id").(string))
 
@@ -100,11 +72,43 @@ func resourceStreamCreate(ctx context.Context, d *schema.ResourceData, m interfa
 }
 
 func resourceStreamUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return nil
+
+	if d.HasChange("name") || d.HasChange("description") {
+		streamId := d.Id()
+		serverToken := d.Get("server_token").(string)
+		stream := Stream{
+			Name:        d.Get("name").(string),
+			Description: d.Get("description").(string),
+		}
+		_, stream = doStreamRequests("PATCH", fmt.Sprintf("/%s", streamId), stream, serverToken)
+
+		d.Set("last_updated", time.Now().Format(time.RFC850))
+	}
+
+	return resourceStreamRead(ctx, d, m)
 }
 
 func resourceStreamRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return nil
+	serverToken := d.Get("server_token").(string)
+	streamId := d.Id()
+	stream := Stream{}
+	diags, stream := doStreamRequests("GET", fmt.Sprintf("/%s", streamId), stream, serverToken)
+
+	if stream.ID == "" {
+		return diags
+	}
+	d.SetId(stream.ID)
+	if err := d.Set("name", stream.Name); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("description", stream.Description); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("message_stream_type", stream.MessageStreamType); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 }
 
 func resourceStreamDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
