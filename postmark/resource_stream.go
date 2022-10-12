@@ -113,5 +113,11 @@ func resourceStreamRead(ctx context.Context, d *schema.ResourceData, m interface
 
 // there is no delete endpoint for streams just archive and unarchive
 func resourceStreamDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return nil
+	serverToken := d.Get("server_token").(string)
+	diags, stream := doStreamRequests("POST", d.Id()+"/archive", Stream{}, serverToken)
+	if stream.ID == "" {
+		return diags
+	}
+	d.SetId("")
+	return diags
 }

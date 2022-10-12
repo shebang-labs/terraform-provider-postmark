@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	postmarkSDK "github.com/keighl/postmark"
@@ -23,6 +24,9 @@ func doStreamRequests(method string, path string, stream Stream, serverToken str
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Postmark-Server-Token", serverToken)
+	if strings.Contains(path, "archive") {
+		req.Header.Add("Content-Length", "0")
+	}
 
 	body, err := json.Marshal(stream)
 	if err != nil {
