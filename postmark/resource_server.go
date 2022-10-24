@@ -49,6 +49,21 @@ func resourceServer() *schema.Resource {
 	}
 }
 
+// Acknowledgment for the implementation for this struct: https://github.com/keighl/postmark/blob/master/servers.go
+// Server represents a server registered in your Postmark account
+type Server struct {
+	// ID of server
+	ID int64
+	// Name of server
+	Name string
+	// ApiTokens associated with server.
+	ApiTokens []string
+	// Color of the server in the rack screen. Purple Blue Turquoise Green Red Yellow Grey
+	Color string
+	// Delivery type of server
+	DeliveryType string
+}
+
 func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -64,10 +79,19 @@ func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interfa
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Postmark-Account-Token", c.AccountToken)
 
-	server := postmarkSDK.Server{}
+	server := Server{}
 
 	server.Name = d.Get("name").(string)
 	server.Color = d.Get("color").(string)
+	server.DeliveryType = d.Get("delivery_type").(string)
+	if server.DeliveryType != "live" && server.DeliveryType != "Sandbox" {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Unable to create Postmark server",
+			Detail:   "delivery_type must be either live or Sandbox",
+		})
+		return diags
+	}
 	body, err := json.Marshal(server)
 	if err != nil {
 		return diag.FromErr(err)

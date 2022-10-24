@@ -45,6 +45,7 @@ You can edit/delete for edit you can edit those two fields
 resource "postmark_server" "s1" {
     name = "Server 1"
     color = "blue"
+    delivery_type = "live"
 }
 ```
 
