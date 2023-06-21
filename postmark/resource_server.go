@@ -30,6 +30,10 @@ func resourceServer() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"delivery_type": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
 			"apitokens": &schema.Schema{
 				Type:      schema.TypeList,
 				Computed:  true,
