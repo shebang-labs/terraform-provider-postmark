@@ -9,7 +9,7 @@ Go 1.19.1 (to build the provider plugin)
 
 ```
     $ git clone git@github.com:shebang-labs/terraform-provider-postmark.git
-    $ make installLinux (for linux) or make installMac (for Mac)
+    $ make
 ```
 
 
