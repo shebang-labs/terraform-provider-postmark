@@ -44,6 +44,12 @@ func resourceServer() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"smtp_api_activated": &schema.Schema{
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Whether SMTP is enabled on this server. Defaults to true.",
+			},
 			"last_updated": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -66,6 +72,8 @@ type Server struct {
 	Color string
 	// Delivery type of server
 	DeliveryType string
+	// SmtpApiActivated specifies whether or not SMTP is enabled on this server.
+	SmtpApiActivated bool
 }
 
 func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -88,6 +96,7 @@ func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interfa
 	server.Name = d.Get("name").(string)
 	server.Color = d.Get("color").(string)
 	server.DeliveryType = d.Get("delivery_type").(string)
+	server.SmtpApiActivated = d.Get("smtp_api_activated").(bool)
 	if server.DeliveryType != "live" && server.DeliveryType != "Sandbox" {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -125,11 +134,12 @@ func resourceServerUpdate(ctx context.Context, d *schema.ResourceData, m interfa
 	client := &http.Client{}
 	c := m.(*postmarkSDK.Client)
 
-	if d.HasChange("name") || d.HasChange("color") {
+	if d.HasChanges("name", "color", "smtp_api_activated") {
 		serverId := d.Id()
-		server := postmarkSDK.Server{}
+		server := Server{}
 		server.Name = d.Get("name").(string)
 		server.Color = d.Get("color").(string)
+		server.SmtpApiActivated = d.Get("smtp_api_activated").(bool)
 		req, err := http.NewRequest("PUT", "https://api.postmarkapp.com/servers/"+serverId, nil)
 		req.Header.Add("Accept", "application/json")
 		req.Header.Add("Content-Type", "application/json")
@@ -173,6 +183,9 @@ func resourceServerRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 	if err := d.Set("apitokens", flattenStringList(server.ApiTokens)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("smtp_api_activated", server.SmtpApiActivated); err != nil {
 		return diag.FromErr(err)
 	}
 
