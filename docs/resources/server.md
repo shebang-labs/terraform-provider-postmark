@@ -3,12 +3,23 @@
 page_title: "postmark_server Resource - terraform-provider-postmark"
 subcategory: ""
 description: |-
-  
+  Manages a Postmark server.
 ---
 
 # postmark_server (Resource)
 
+Manages a Postmark server, including SMTP activation.
 
+## Example Usage
+
+```terraform
+resource "postmark_server" "example" {
+  name               = "my-app production"
+  color              = "blue"
+  delivery_type      = "live"
+  smtp_api_activated = true
+}
+```
 
 
 
@@ -23,7 +34,9 @@ description: |-
 
 - `apitokens` (List of String, Sensitive)
 - `color` (String)
+- `delivery_type` (String) The delivery type of the server. Must be `live` or `Sandbox`.
 - `last_updated` (String)
+- `smtp_api_activated` (Boolean) Whether SMTP is enabled on this server. Defaults to `true`.
 
 ### Read-Only
 

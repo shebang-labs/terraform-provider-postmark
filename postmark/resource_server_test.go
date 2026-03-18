@@ -42,6 +42,35 @@ func TestAccServer_basic(t *testing.T) {
 	})
 }
 
+func TestAccServer_smtpApiActivated(t *testing.T) {
+	var server postmarkSDK.Server
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			// Create a server with SMTP enabled (default)
+			{
+				Config: testAccPostmarkServerSmtpEnabledConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckPostmarkServerExists("postmark_server.s1", &server),
+					resource.TestCheckResourceAttr("postmark_server.s1", "smtp_api_activated", "true"),
+					testAccCheckPostmarkServerSmtpApiActivated(&server, true),
+				),
+			},
+			// Update to disable SMTP
+			{
+				Config: testAccPostmarkServerSmtpDisabledConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckPostmarkServerExists("postmark_server.s1", &server),
+					resource.TestCheckResourceAttr("postmark_server.s1", "smtp_api_activated", "false"),
+					testAccCheckPostmarkServerSmtpApiActivated(&server, false),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckPostmarkServerExists(n string, server *postmarkSDK.Server) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -97,6 +126,35 @@ func testAccPostmarkServerUpdateConfig() string {
 resource "postmark_server" "s1" {
   name             = "Test 2"
   color         = "green"
+}
+  `
+}
+
+func testAccCheckPostmarkServerSmtpApiActivated(server *postmarkSDK.Server, expected bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if server.SmtpApiActivated != expected {
+			return fmt.Errorf("got SmtpApiActivated %v; want %v", server.SmtpApiActivated, expected)
+		}
+		return nil
+	}
+}
+
+func testAccPostmarkServerSmtpEnabledConfig() string {
+	return `
+resource "postmark_server" "s1" {
+  name               = "Test SMTP Enabled"
+  color              = "blue"
+  smtp_api_activated = true
+}
+  `
+}
+
+func testAccPostmarkServerSmtpDisabledConfig() string {
+	return `
+resource "postmark_server" "s1" {
+  name               = "Test SMTP Enabled"
+  color              = "blue"
+  smtp_api_activated = false
 }
   `
 }
